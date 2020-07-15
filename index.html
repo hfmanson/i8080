@@ -1,0 +1,197 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml" xml:lang="en" lang="en" manifest="emu8080.manifest">
+  <head>
+    <!-- Intel 8080 CPU Emulator -->
+    <title>Intel 8080 CPU Emulator</title>
+    <link rel="shortcut icon" href="favicon.ico" type="image/x-icon"/>
+    <link rel="apple-touch-icon" href="apple-touch-icon.png"/>
+    <meta name="application-name" content="Emu8080"/>
+    <meta name="description" content="Intel 8080 CPU Emulator"/>
+    <link rel="icon" href="icon32.png" sizes="32x32"/>
+    <link rel="icon" href="icon48.png" sizes="48x48"/>
+    <style type="text/css">
+      body, pre { font-family: "DejaVu Sans Mono", "Everson Mono", FreeMono, "Andale Mono", "Lucida Console", monospace;
+      }
+    </style>
+  </head>
+  <body>
+<pre>
+    <b>Intel 8080 CPU Emulator</b>
+
+    2010 by Stefan Tramm
+
+    based on
+      <i>ShellInABox</i> and its marvelous VT100 emulator by Markus Gutschke
+	(http://code.google.com/p/shellinabox/)
+      <i>js8080</i> by Chris Double (http://www.bluishcoder.co.nz/js8080/)
+      <i>z80pack</i> by Udo Munk (http://www.unix4fun.org/z80pack/)
+
+    This program emulates a complete Intel 8080 Microcomputer that runs CP/M.
+
+    It supports 4 disk drives (8' CPM standard), which are stored persistently
+    in the browsers local database. Disks can be mounted by the monitors
+    'r' (reads from server) and 'dsk' commands (supports mounting of images
+    via drag-n-drop from your host computer). A paper tape is also available,
+    mount new tapes by drag-n-drop onto the main window. Modified disks and
+    punched tapes can be posted to arbitrary webservers ('ptp' and 'dsk N'
+    commands). The emulator is written as a web app and is therefore cached
+    by your browser, therefore no further internet connection is required
+    to run the emulator.
+    When CPM is booted, type CTRL-. to escape to the monitor and 'g' to
+    continue.
+    Chrome6+ (or Safari5+) required. Firefox does not support the disk
+    subsystem, as currently only WebDB is implemented.
+
+    <a href="emu8080.html"><b>Start Emu8080</b></a> for the full adventure!
+
+    --------------------
+
+    Some Intel HEX files with demo programs, after loading the
+    file with the read command 'r', start with 'g 0'.
+
+    <a href="hello.hex"  >hello.hex</a>   -- Hello World
+    <a href="loop.hex"   >loop.hex</a>    -- an endless loop printing dots, stop with Ctrl-.
+    <a href="10mcyc.hex" >10mcyc.hex</a>  -- execute 10'023'517 clock cycles
+    <a href="basic.hex"  >basic.hex</a>   -- MS 8K BASIC ('g 1000' to start, 'exit' to leave)
+    <a href="tinybas.hex">tinybas.hex</a> -- Dr. Li-Chen Wang Tiny BASIC 1976 (use UPPER case)
+
+    --------------------
+
+    CPM and disks
+
+    <a href="cpma.cpm" >cpma.cpm</a>  -- CP/M 2.2 boot disk
+     insert the A: diskette:  'r 0 cpma' needed only once
+     load boot sector to mem: 'b'
+     start the boot loader:   'g 0'
+     Format diskettes in drives B: to D: with 'F 1' to 'F 3'.
+     For further info read the <a href="cpm22-m.pdf">CP/M 2.2 Manual</a> (540KB) and
+     the <a href="Intel%208080-8085%20Assembly%20Language%20Programming%201977%20Intel.pdf"
+     >Intel 8080-8085 Assembly Language Programming Guide</a> (5.8MB).
+
+    <a href="zork1.cpm">zork1.cpm</a> -- classic adventure game
+     insert the game into B: 'r 1 zork1' needed only once
+     when CP/M is booted:    'b:'
+                             'zork1'
+     many thanks to Neozeed (http://virtuallyfun.blogspot.com/)
+     for contributing the image! enjoy it :-)
+
+    <a href="volks4th.cpm">volks4th.cpm</a>  -- Volks 4th for 8080
+    <a href="volks4th2.cpm">volks4th2.cpm</a> -- data disk
+     insert the 4th disks: 'r 2 volks4th'
+			   'r 3 volks4th2'
+     when CP/M is booted:  'c:'
+			   'volks4th'
+     many thanks to Carsten Strotmann from 4th eV for his contribution.
+     Details at <a href="http://www.forth-ev.de/article.php/20101121113404909">forth-ev.de</a>.
+
+    Michael Steil also wrote a nice and helpful <a href="http://www.pagetable.com/?p=457">article</a> on this emulator.
+    Many thanks to Michael aka pagetable.
+
+    --------------------
+
+    Used I/O ports (decimal addresses):
+ 
+      0 - console status
+          read console 0 status:
+          0xff : input available
+          0x00 : no input available
+ 
+      1 - console data
+ 
+      2 - printer status (not implemented yet)
+      3 - printer data
+ 
+      4 - auxilary status / command
+	  read  status:  0xff : input available
+	  write command: 0x01 : rewind tape
+      5 - auxilary data
+	  read from paper tape, tapes are mounted by dropping a text file
+	  write to puncher
+ 
+     10 - FDC drive
+     11 - FDC track
+     12 - FDC sector
+ 
+     13 - FDC command
+          write FDC command: transfer one sector in the wanted direction,
+          0 = read, 1 = write
+          read FDC command: check for IO completion,
+          0 = still in progress, 1 = IO done
+ 
+     14 - FDC status
+          The status byte of the FDC is set as follows:
+          0 - ok
+          1 - illegal drive
+          2 - illegal track
+          3 - illegal sector
+          4 - seek error
+          5 - read error
+          6 - write error
+          7 - illegal command to FDC
+ 
+     15 - DMA destination address low
+     16 - DMA destination address high
+ 
+    --------------------
+
+    The Z80 assember listing of the sector 0 <a href="boot.lis">boot loader</a>
+    and the Z80 assembler listing for the used <a href="bios.lis">BIOS</a>.
+
+    A simple <a href="savefile">savefile</a> CGI to handle the upload of paper tape
+    puncher files and disk images. DONT INSTALL THIS PROGRAM
+    ON A PUBLIC WEBSERVER, it contains severe security holes!
+    USE AT YOUR OWN RISC.
+
+    --------------------
+
+    The 8K BASIC is derived from the NASCOM 8K BASIC by Microsoft,
+    sources are located <a href="http://www.joelowens.org/z80/zdownload.htm"
+    >here</a>. For details take a look at the
+    scanned <a href="http://www.nascomhomepage.com/pdf/Basic.pdf"
+    >manual</a> (1.3MB). Instead of 'CSAVE' and 'CLOAD' use
+    'SAVE' and 'LOAD' to save/load from the virtual papertape
+    device. Use 'EXIT' to go back to the console. Don't expect
+    that the screen oriented commands work.
+
+    You can download a simple <a href="8bit-benchmark.bas">benchmark BASIC</a> program which
+    must be dropped on the terminal window to be mounted as a
+    paper tape, which can be loaded from inside BASIC via 'LOAD'.
+    The source is linked inside the REM lines, just click it :-)
+
+    --------------------
+
+    The 4K <a href="https://en.wikipedia.org/wiki/Li-Chen_Wang">Dr. Li-Chen Wang</a> Tiny BASIC is derived from Bruce Sherry's
+    CP/M version. The source and documentation ca be found <a href="http://www.nicholson.com/rhn/files/tinybasic.tar.Z">here</a>.
+    This version is modified, 'BYE' will terminate and halt the program.
+    'SAVE' and 'LOAD' do not allow/require a filename, as the program
+    will be saved/loaded to/from the virtual papertape device.
+    The <a href="tinidisk.txt">documentation</a> and <a href="tinidisk.asm">modified source</a> are also available here
+    (without any warranties).
+    Tiny BASIC commands, statements and functions use UPPER case only!
+
+
+    Have fun -- Stefan Tramm
+
+    --------------------
+
+    On 2013-08-20 Chris Double (@doublec) mentioned this work
+    as using his 8080 emulator on <a href="https://twitter.com/doublec/status/370000766364180480">Twitter</a>. Many Thanks Chris!
+
+    --------------------
+
+    Emu8080 is a complete CP/M system, it emulates an Intel 8080
+    microprocessor with VT100 terminal, four 8' floppy disk drives,
+    a paper tape reader, a paper tape puncher and line printer.
+    The disk drive data is stored in the browser local Web-SQL database,
+    so you need either Safari5+ or Chrome6+. If you want to mount
+    your own disk drives and want to mount desktop files on the
+    paper tape reader via Drag-n-Drop, you need Chrome6+.
+    The emulator is implemented as a modern HTML 5 Web App, so
+    after first starting, your browser will cache all files, so
+    that you can run it even without an internet connection.
+
+</pre>
+
+  </body>
+</html>
