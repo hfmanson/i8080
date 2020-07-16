@@ -100,13 +100,14 @@ Emulator.prototype.keysPressed = function(ch) {
       if (c =='\u000e') {
         this.keys = '';
         this.error('Interrupted');
-	this.vt100('^.\r\n');
+        this.vt100('^.\r\n');
         return;
       }
       this.keys += c;
     }
+  } else {
+    this.keys += ch;
   }
-  this.keys += ch;
   this.gotoState(this.state);
 };
 
@@ -179,7 +180,7 @@ Emulator.prototype.doInit = function() {
   this.memio  = new Memio(
     function(vt){return function(c){vt.vt100(c)}}(this),      //out
     function(vt){return function(){var c = vt.keys.charAt(0); //in
-				   vt.keys = '';
+				   vt.keys = vt.keys.slice(1);
                                    return c.charCodeAt(0) & 0x7f}
                 }(this),
     function(vt){return function(){var s = vt.keys.length>0;  //status
